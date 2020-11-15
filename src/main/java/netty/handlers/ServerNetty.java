@@ -1,17 +1,25 @@
 package netty.handlers;
 
+import client.app.javaFX.FileInfo;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
     private String rootPath = "/";
+    private Path directPath = Path.of("server/");
     private String[] pathCommand;
+    private List<FileInfo> list;
 
 
     /*public static final ConcurrentLinkedDeque<ChannelHandlerContext> channels =
@@ -24,6 +32,14 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
     }
 
+    private byte[] convertToBytes(Object object) throws IOException {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutput out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        }
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String s) throws Exception {
         System.out.println("Message from client: " + s);
@@ -31,7 +47,16 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
         pathCommand = null;
 
         if (s.equals("ls")) {
-            ctx.writeAndFlush(getFilesList());
+            byte[] sendByte = convertToBytes(getFilesList());
+            System.out.println(sendByte.length);
+            ByteBuf btf = ctx.alloc().buffer().writeBytes(sendByte);
+            ctx.writeAndFlush(btf);
+        }
+
+        if (s.equals("path")) {
+            ctx.writeAndFlush(ctx.alloc().buffer().writeBytes(convertToBytes(directPath.toString())));
+
+            System.out.println("send");
         }
 
         if (s.split(" ").length > 1) {
@@ -58,10 +83,6 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
             }
 
         }
-
-        /*s = s.replaceAll("fuck", "****");
-        String finalS = s;
-        channels.forEach(c -> c.writeAndFlush(finalS));*/
     }
 
     private boolean validPath (String s) {
@@ -80,8 +101,13 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
         }
     }
 
-    private String getFilesList() {
-        return String.join(" ", new File(rootPath).list());
+    private List<FileInfo> getFilesList() {
+        try {
+            list = Files.list(directPath).map(FileInfo::new).collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
 

@@ -1,74 +1,55 @@
 package client.app.javaFX;
 
 import javafx.application.Platform;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.layout.VBox;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
-public class Controller implements Initializable {
+public class Controller {
+    @FXML
+    VBox leftPanel, rightPanel;
+
     public void btnExitAction(ActionEvent actionEvent) {
         Platform.exit();
     }
 
-    @FXML
-    TableView<FileInfo> filesTable;
 
-    @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
-        TableColumn<FileInfo, String> fileTypeColumn = new TableColumn<>();
-        fileTypeColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getType().getName()));
-        fileTypeColumn.setPrefWidth(24);
+    public void copyBtnAction(ActionEvent actionEvent) {
+        PanelController leftPC = (PanelController) leftPanel.getProperties().get("ctrl");
+        PanelController rightPC = (PanelController) rightPanel.getProperties().get("ctrl");
 
-        TableColumn<FileInfo, String> fileNameColumn = new TableColumn<>("Имя");
-        fileNameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getFileName()));
-        fileNameColumn.setPrefWidth(300);
+        if (leftPC.getSelectedFileName() == null && rightPC.getSelectedFileName() == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Ни один файл не был выбран", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
 
-        TableColumn<FileInfo, Long> fileSizeColumn = new TableColumn<>("Размер");
-        fileSizeColumn.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getSize()));
-        fileSizeColumn.setPrefWidth(100);
+        PanelController srcPC = null, dstPC = null;
+        if (leftPC.getSelectedFileName() != null) {
+            srcPC = leftPC;
+            dstPC = rightPC;
+        }
 
-        fileSizeColumn.setCellFactory(column -> {
-            return new TableCell<FileInfo, Long>() {
-                @Override
-                protected void updateItem(Long item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item == null || empty) {
-                        setText(null);
-                        setStyle("");
-                    } else {
-                        String text = String.format("%,d bytes", item);
-                        if (item == -1L) {
-                            text = "[DIR]";
-                        }
-                        setText(text);
-                    }
-                }
-            };
-        });
+        if (rightPC.getSelectedFileName() != null) {
+            srcPC = rightPC;
+            dstPC = leftPC;
+        }
 
-        filesTable.getColumns().addAll(fileTypeColumn, fileNameColumn, fileSizeColumn);
+        Path srcPath = Paths.get(srcPC.getCurrentPath(), srcPC.getSelectedFileName());
+        Path dstPath = Paths.get(dstPC.getCurrentPath()).resolve(srcPC.getSelectedFileName());
 
-        updateList(Paths.get("."));
-    }
-
-    public void updateList (Path path) {
         try {
-            filesTable.getItems().clear();
-            filesTable.getItems().addAll(Files.list(path).map(FileInfo::new).collect(Collectors.toList()));
-            filesTable.sort();
+            Files.copy(srcPath,dstPath);
+            dstPC.updateList(Paths.get(dstPC.getCurrentPath()));
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Не удалось обновить список файлов", ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
             alert.showAndWait();
         }
     }
