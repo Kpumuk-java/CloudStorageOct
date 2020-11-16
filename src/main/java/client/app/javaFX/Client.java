@@ -13,12 +13,14 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 
 public class Client {
-    private final ByteBuffer buffer = ByteBuffer.allocate(1024);
+    private boolean auth = false;
+    private int BUFFER_SIZE = 1024;
+    private ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
     private int SERVER_PORT = 8189;
     private SocketChannel channel;
     private Selector selector;
-    private ObjectInputStream in;
     private byte[] inputBufferByte;
+    private int sizeFile = BUFFER_SIZE;
 
     public void connected() {
         try {
@@ -54,13 +56,17 @@ public class Client {
     public void msgServer(String s) {
         try {
             channel.write(ByteBuffer.wrap(s.getBytes()));
-        } catch (IOException e) {
+            buffer.clear();
+            //buffer.flip();
+            Thread.sleep(100);
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    public void updateListServer() {
+    public void updateListServer(PanelController panelController) {
         try {
+
             while (channel.isOpen()) {
                 selector.select();
                 var selectionKeys = selector.selectedKeys();
@@ -72,22 +78,35 @@ public class Client {
 
                     if (key.isWritable()) {
                         channel.write(ByteBuffer.wrap("ls".getBytes()));
-                        Thread.sleep(100);
-
+                        Thread.sleep(200);
+                        //buffer.flip();
+                        //Thread.sleep(100);
+                        //inputBufferByte = null;
+                        buffer.clear();
                         inputBufferByte = inputObject();
-
-                        List<FileInfo> list = (List<FileInfo>) convertFromBytes(inputBufferByte);
+                        //sizeFile = ByteBuffer.wrap(inputBufferByte).getInt() + 1024;
+                        //System.out.println(sizeFile);
+                        //inputBufferByte = inputObject();
+                        if (inputBufferByte != null) {
+                            System.out.println("1");
+                            List<FileInfo> list = (List<FileInfo>) convertFromBytes(inputBufferByte);
+                            panelController.setList(list);
                         /*for (FileInfo f : list) {
                             System.out.println("write");
                             System.out.println(f.getFileName());
                         }*/
-                        inputBufferByte = null;
+                        } else {
+                            System.out.println("List is empty");
+                            panelController.setList(null);
+                        }
+                        //inputBufferByte = null;
+                        //buffer.flip();
                         channel.write(ByteBuffer.wrap("path".getBytes()));
+                        //buffer.flip();
                         Thread.sleep(200);
                         inputBufferByte = inputObject();
+                        panelController.setPathFieldServer((String) convertFromBytes(inputBufferByte));
 
-                        PanelController.setPathFieldServer((String) convertFromBytes(inputBufferByte));
-                        PanelController.setList(list);
                         return;
                     }
 
@@ -95,21 +114,44 @@ public class Client {
                 }
 
             }
-        } catch (IOException | ClassNotFoundException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
+    public void authSend (String s) throws IOException {
+
+        try {
+            inputBufferByte = null;
+            channel.write(ByteBuffer.wrap(s.getBytes()));
+            //buffer.flip();
+            Thread.sleep(200);
+            inputBufferByte = inputObject();
+            if (inputBufferByte != null ) {
+                String authString = (String) convertFromBytes(inputBufferByte);
+                if (authString.equals("OK")) {
+                    auth = true;
+                }
+            } else {
+                System.out.println("return is empty");
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     private byte[] inputObject() throws IOException {
+        System.out.println("started input byte");
 
         int read = channel.read(buffer);
-        if (read == -1) {
-            channel.close();
-            return null;
-        }
-        if (read == 0) {
-            return null;
-        }
+            //System.out.println("read channel " + read);
+            if (read == -1) {
+                return null;
+            }
+            if (read == 0) {
+                return null;
+            }
         buffer.flip();
         byte[] buf = new byte[read];
         int pos = 0;
@@ -117,14 +159,52 @@ public class Client {
             buf[pos++] = buffer.get();
         }
         buffer.clear();
-
+        sizeFile = BUFFER_SIZE;
         return buf;
     }
 
-    private static Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
+    private static Object convertFromBytes(byte[] bytes) {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
              ObjectInput in = new ObjectInputStream(bis)) {
             return in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    public void closeChannel() {
+        try {
+            //channel.write(ByteBuffer.wrap("exit".getBytes()));
+            selector.close();
+            channel.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void cdServer(String msg) {
+    }
+
+    public byte[] downloadForServer(String s) {
+        byte[] b = null;
+        System.out.println(s);
+        try {
+            msgServer(s);
+            Thread.sleep(100);
+            b = inputObject();
+            sizeFile = ByteBuffer.wrap(b).getInt();
+            System.out.println("download " + sizeFile);
+            System.out.println(ByteBuffer.wrap(b).getInt());
+            b = inputObject();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return b;
+    }
+
+    public boolean isAuth() {
+        return auth;
     }
 }

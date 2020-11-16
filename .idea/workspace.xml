@@ -2,7 +2,22 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="07bdd33a-f7c7-4085-9868-60e44016e0e4" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/client/app/javaFX/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/app/javaFX/Client.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/client/app/javaFX/Controller.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/app/javaFX/Controller.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/client/app/javaFX/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/app/javaFX/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/client/app/javaFX/PanelController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/app/javaFX/PanelController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/netty/handlers/ServerNetty.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/netty/handlers/ServerNetty.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/main.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/main.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/client/app/javaFX/Client.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/client/app/javaFX/Client.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/client/app/javaFX/Controller.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/client/app/javaFX/Controller.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/client/app/javaFX/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/client/app/javaFX/Main.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/client/app/javaFX/PanelController$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/client/app/javaFX/PanelController$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/client/app/javaFX/PanelController$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/client/app/javaFX/PanelController$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/client/app/javaFX/PanelController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/client/app/javaFX/PanelController.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/main.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/main.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/netty/handlers/ServerNetty.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/netty/handlers/ServerNetty.class" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,6 +120,7 @@
       <workItem from="1605212022059" duration="5780000" />
       <workItem from="1605384652313" duration="14514000" />
       <workItem from="1605423492714" duration="23678000" />
+      <workItem from="1605507248539" duration="36570000" />
     </task>
     <servers />
   </component>
@@ -112,10 +128,10 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="445" y="207" key="#com.intellij.ide.util.MemberChooser" timestamp="1605479584278">
+    <state x="445" y="207" key="#com.intellij.ide.util.MemberChooser" timestamp="1605546663887">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state x="445" y="207" key="#com.intellij.ide.util.MemberChooser/0.0.1280.984@0.0.1280.984" timestamp="1605479584278" />
+    <state x="445" y="207" key="#com.intellij.ide.util.MemberChooser/0.0.1280.984@0.0.1280.984" timestamp="1605546663887" />
     <state x="436" y="350" width="407" height="292" key="#com.intellij.refactoring.move.moveClassesOrPackages.MoveClassesOrPackagesDialog.classes" timestamp="1604866293379">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
@@ -128,22 +144,22 @@
       <screen x="0" y="0" width="1280" height="984" />
     </state>
     <state x="419" y="232" key="FileChooserDialogImpl/0.0.1280.984@0.0.1280.984" timestamp="1605212161034" />
-    <state width="1236" height="320" key="GridCell.Tab.0.bottom" timestamp="1605481925902">
+    <state width="1236" height="251" key="GridCell.Tab.0.bottom" timestamp="1605550356650">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1236" height="320" key="GridCell.Tab.0.bottom/0.0.1280.984@0.0.1280.984" timestamp="1605481925902" />
-    <state width="1236" height="320" key="GridCell.Tab.0.center" timestamp="1605481925902">
+    <state width="1236" height="251" key="GridCell.Tab.0.bottom/0.0.1280.984@0.0.1280.984" timestamp="1605550356650" />
+    <state width="1236" height="251" key="GridCell.Tab.0.center" timestamp="1605550356650">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1236" height="320" key="GridCell.Tab.0.center/0.0.1280.984@0.0.1280.984" timestamp="1605481925902" />
-    <state width="1236" height="320" key="GridCell.Tab.0.left" timestamp="1605481925901">
+    <state width="1236" height="251" key="GridCell.Tab.0.center/0.0.1280.984@0.0.1280.984" timestamp="1605550356650" />
+    <state width="1236" height="251" key="GridCell.Tab.0.left" timestamp="1605550356650">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1236" height="320" key="GridCell.Tab.0.left/0.0.1280.984@0.0.1280.984" timestamp="1605481925901" />
-    <state width="1236" height="320" key="GridCell.Tab.0.right" timestamp="1605481925902">
+    <state width="1236" height="251" key="GridCell.Tab.0.left/0.0.1280.984@0.0.1280.984" timestamp="1605550356650" />
+    <state width="1236" height="251" key="GridCell.Tab.0.right" timestamp="1605550356650">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1236" height="320" key="GridCell.Tab.0.right/0.0.1280.984@0.0.1280.984" timestamp="1605481925902" />
+    <state width="1236" height="251" key="GridCell.Tab.0.right/0.0.1280.984@0.0.1280.984" timestamp="1605550356650" />
     <state width="1236" height="320" key="GridCell.Tab.1.bottom" timestamp="1605481925902">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
@@ -168,16 +184,9 @@
       <screen x="0" y="0" width="1280" height="984" />
     </state>
     <state x="22" y="193" key="new project wizard/0.0.1280.984@0.0.1280.984" timestamp="1605212162298" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/client/app/javaFX/Client.java</url>
-          <line>104</line>
-          <option name="timeStamp" value="27" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <state x="346" y="119" key="refactoring.ChangeSignatureDialog" timestamp="1605512657124">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state x="346" y="119" key="refactoring.ChangeSignatureDialog/0.0.1280.984@0.0.1280.984" timestamp="1605512657124" />
   </component>
 </project>

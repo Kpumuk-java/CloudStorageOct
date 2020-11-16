@@ -5,6 +5,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
@@ -13,13 +16,24 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class Controller {
+
+    @FXML
+    StackPane auth;
+
+    @FXML
+    TextField login, password;
+
     @FXML
     VBox leftPanel, rightPanel;
 
+    @FXML
+    HBox primaryPanel;
+
     public void btnExitAction(ActionEvent actionEvent) {
+        PanelController panelController = (PanelController) leftPanel.getProperties().get("ctrl");
+        panelController.closeConnectedClient();
         Platform.exit();
     }
-
 
     public void copyBtnAction(ActionEvent actionEvent) {
         PanelController leftPC = (PanelController) leftPanel.getProperties().get("ctrl");
@@ -42,15 +56,86 @@ public class Controller {
             dstPC = leftPC;
         }
 
+        String fileName = srcPC.getSelectedFileName();
+
+        if (srcPC.isServerPanel() & dstPC.isServerPanel()) {
+            srcPC.updateListClientInServer();
+            dstPC.updateListClientInServer();
+            if (!dstPC.getList().isEmpty()) {
+                for (FileInfo f : dstPC.getList()) {
+                    if (fileName.equals(f.getFileName())) {
+
+                        return;
+                    }
+                }
+                srcPC.copyServer("copyServer " + srcPC.getPathFieldServer() + "\\" + fileName + " " + dstPC.getPathFieldServer() + "\\" + fileName, dstPC);
+                System.out.println(srcPC.getPathFieldServer() + "\\" + fileName + " " + dstPC.getPathFieldServer());
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
+                alert.showAndWait();
+                return;
+            }
+            return;
+        } else if (srcPC.isServerPanel() & !dstPC.isServerPanel()) {
+            System.out.println("download file Server -> Client");
+            srcPC.downloadOutServer("download " + srcPC.getPathFieldServer() + "\\", fileName, dstPC.getCurrentPath());
+            return;
+        } else if (!srcPC.isServerPanel() & dstPC.isServerPanel()) {
+            dstPC.updateListClientInServer();
+            return;
+        }
+
         Path srcPath = Paths.get(srcPC.getCurrentPath(), srcPC.getSelectedFileName());
         Path dstPath = Paths.get(dstPC.getCurrentPath()).resolve(srcPC.getSelectedFileName());
 
         try {
-            Files.copy(srcPath,dstPath);
+            Files.copy(srcPath, dstPath);
             dstPC.updateList(Paths.get(dstPC.getCurrentPath()));
         } catch (IOException e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
             alert.showAndWait();
+        }
+    }
+
+    public void deleteBtnAction(ActionEvent actionEvent) {
+        PanelController leftPC = (PanelController) leftPanel.getProperties().get("ctrl");
+        PanelController rightPC = (PanelController) rightPanel.getProperties().get("ctrl");
+
+        if (leftPC.getSelectedFileName() == null && rightPC.getSelectedFileName() == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Ни один файл не был выбран", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+
+        try {
+            if (leftPC.getSelectedFileName() != null) {
+                deleteFileAndDirectory(leftPC);
+            } else if (rightPC.getSelectedFileName() != null) {
+                deleteFileAndDirectory(rightPC);
+            }
+        } catch (IOException e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось удалить файл", ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    private void deleteFileAndDirectory(PanelController leftPC) throws IOException {
+        Path path = Paths.get(leftPC.getCurrentPath()).resolve(leftPC.getSelectedFileName());
+        if (leftPC.isServerPanel()) {
+            System.out.println("delete " + leftPC.getPathFieldServer() + "\\" + leftPC.getSelectedFileName());
+            leftPC.deleteFromServer("delete " + leftPC.getPathFieldServer() + "\\" + leftPC.getSelectedFileName());
+        } else {
+            Files.delete(path);
+            leftPC.updateList(Paths.get(leftPC.getCurrentPath()));
+        }
+    }
+
+    public void authAction(ActionEvent actionEvent) throws IOException {
+        PanelController PC = (PanelController) leftPanel.getProperties().get("ctrl");
+        PC.authAction(login.getText() + " " + password.getText());
+        if (PC.getOpenConnected().isAuth()) {
+               auth.setVisible(false);
+               primaryPanel.setVisible(true);
         }
     }
 }

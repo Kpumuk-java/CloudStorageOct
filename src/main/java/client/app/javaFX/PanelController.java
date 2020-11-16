@@ -11,7 +11,10 @@ import javafx.scene.input.MouseEvent;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -28,17 +31,33 @@ public class PanelController implements Initializable {
     @FXML
     TextField pathField;
 
-    private static List<FileInfo> list = null;
+    private List<FileInfo> list = null;
     private Client openConnected;
     private boolean isServerPanel = false;
-    private static String pathFieldServer;
+    private String pathFieldServer;
 
-    public static void setList(List<FileInfo> list) {
-        PanelController.list = list;
+    public void setList(List<FileInfo> list) {
+        this.list = list;
     }
 
-    public static void setPathFieldServer(String pathFieldServer) {
-        PanelController.pathFieldServer = pathFieldServer;
+    public Client getOpenConnected() {
+        return openConnected;
+    }
+
+    public List<FileInfo> getList() {
+        return list;
+    }
+
+    public boolean isServerPanel() {
+        return isServerPanel;
+    }
+
+    public void setPathFieldServer(String pathFieldServer) {
+        this.pathFieldServer = pathFieldServer;
+    }
+
+    public String getPathFieldServer() {
+        return pathFieldServer;
     }
 
     @Override
@@ -49,7 +68,7 @@ public class PanelController implements Initializable {
 
         TableColumn<FileInfo, String> fileNameColumn = new TableColumn<>("Имя");
         fileNameColumn.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getFileName()));
-        fileNameColumn.setPrefWidth(300);
+        fileNameColumn.setPrefWidth(246);
 
         TableColumn<FileInfo, Long> fileSizeColumn = new TableColumn<>("Размер");
         fileSizeColumn.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getSize()));
@@ -80,6 +99,7 @@ public class PanelController implements Initializable {
         fileDateColumn.setPrefWidth(120);
 
         filesTable.getColumns().addAll(fileTypeColumn, fileNameColumn, fileSizeColumn, fileDateColumn);
+        filesTable.getSortOrder().add(fileTypeColumn);
 
         diskBox.getItems().clear();
         for (Path p : FileSystems.getDefault().getRootDirectories()) {
@@ -91,12 +111,27 @@ public class PanelController implements Initializable {
             @Override
             public void handle(MouseEvent event) {
                 if (event.getClickCount() == 2) {
-                    Path path = Paths.get(pathField.getText()).resolve(filesTable.getSelectionModel().getSelectedItem().getFileName());
-                    if (Files.isDirectory(path)) {
-                        updateList(path);
+                    if (!isServerPanel) {
+                        Path path = Paths.get(pathField.getText()).resolve(filesTable.getSelectionModel().getSelectedItem().getFileName());
+                        if (Files.isDirectory(path)) {
+                            updateList(path);
+                        }
+
+                    } else {
+                        Path path = Paths.get(pathFieldServer).resolve(filesTable.getSelectionModel().getSelectedItem().getFileName());
+                        if (Files.isDirectory(path)) {
+                            System.out.println("this directory");
+                            cdServer("cd " + path.toString());
+                        }
                     }
+
                 }
+
             }
+
+
+
+
         });
 
         openConnected = new Client();
@@ -104,6 +139,12 @@ public class PanelController implements Initializable {
 
 
         updateList(Paths.get("."));
+    }
+
+    private void cdServer(String msg) {
+        openConnected.msgServer(msg);
+        openConnected.updateListServer(this);
+        updateListClientInServer();
     }
 
     public void updateList(Path path) {
@@ -119,10 +160,17 @@ public class PanelController implements Initializable {
     }
 
     public void updateListClientInServer() {
-        filesTable.getItems().clear();
-        filesTable.getItems().addAll(list);
-        pathField.setText(pathFieldServer);
-        filesTable.sort();
+
+        if (list != null) {
+            filesTable.getItems().clear();
+            filesTable.getItems().addAll(list);
+            pathField.setText(pathFieldServer);
+            filesTable.sort();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Список файлов не загрузился", ButtonType.OK);
+            alert.showAndWait();
+        }
+
     }
 
     public void btnPathUpAction(ActionEvent actionEvent) {
@@ -132,7 +180,9 @@ public class PanelController implements Initializable {
                 updateList(upperPath);
             }
         } else {
-
+            openConnected.msgServer("up");
+            openConnected.updateListServer(this);
+            updateListClientInServer();
         }
     }
 
@@ -142,13 +192,13 @@ public class PanelController implements Initializable {
     }
 
     public void btnSelectServer(ActionEvent actionEvent) {
-        openConnected.updateListServer();
+        openConnected.updateListServer(this);
         updateListClientInServer();
         isServerPanel = true;
     }
 
     public String getSelectedFileName() {
-        if (filesTable.isFocused()) {
+        if (!filesTable.isFocused()) {
             return null;
         }
         return filesTable.getSelectionModel().getSelectedItem().getFileName();
@@ -156,5 +206,50 @@ public class PanelController implements Initializable {
 
     public String getCurrentPath() {
         return pathField.getText();
+    }
+
+    public void closeConnectedClient() {
+        openConnected.closeChannel();
+    }
+
+    public void copyServer(String s, PanelController dstPC) {
+        try {
+            openConnected.msgServer(s + " 0");
+            Thread.sleep(100);
+            dstPC.updateListClientInServer();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void downloadOutServer(String path, String fileName, String currentPath) {
+        byte[] btf = null;
+        btf = openConnected.downloadForServer(path + fileName);
+        System.out.println(currentPath + fileName);
+        if (!Files.exists(Paths.get(currentPath + fileName))) {
+            try {
+                Files.createFile(Paths.get(currentPath + "\\" +fileName));
+            } catch (IOException e) {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Файл не удалось создать", ButtonType.OK);
+                alert.showAndWait();
+            }
+        }
+        if (btf != null) {
+            try {
+                Files.write(Paths.get(currentPath + "\\" + fileName), btf);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Files isEmpty");
+        }
+    }
+
+    public void deleteFromServer(String s) {
+        openConnected.msgServer(s);
+    }
+
+    public void authAction (String s) throws IOException {
+        openConnected.authSend(s);
     }
 }
