@@ -1,20 +1,22 @@
 package client.app.javaFX;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
+import info.FileInfo;
+
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class Client {
     private boolean auth = false;
-    private int BUFFER_SIZE = 1024;
+    private int BUFFER_SIZE = 6000;
     private ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
     private int SERVER_PORT = 8189;
     private SocketChannel channel;
@@ -32,12 +34,12 @@ public class Client {
 
             while (channel.isOpen()) {
                 selector.select();
-                var selectionKeys = selector.selectedKeys();
-                var iterator = selectionKeys.iterator();
+                Set selectionKeys = selector.selectedKeys();
+                Iterator iterator = selectionKeys.iterator();
 
                 while (iterator.hasNext()) {
 
-                    var key = iterator.next();
+                    SelectionKey key = (SelectionKey) iterator.next();
 
                     if (key.isConnectable()) {
                         channel.finishConnect();
@@ -46,8 +48,6 @@ public class Client {
                     }
                 }
             }
-        } catch (ClosedChannelException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -56,9 +56,8 @@ public class Client {
     public void msgServer(String s) {
         try {
             channel.write(ByteBuffer.wrap(s.getBytes()));
-            buffer.clear();
-            //buffer.flip();
             Thread.sleep(100);
+            buffer.clear();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -66,60 +65,32 @@ public class Client {
 
     public void updateListServer(PanelController panelController) {
         try {
-
-            while (channel.isOpen()) {
-                selector.select();
-                var selectionKeys = selector.selectedKeys();
-                var iterator = selectionKeys.iterator();
-
-                while (iterator.hasNext()) {
-
-                    var key = iterator.next();
-
-                    if (key.isWritable()) {
-                        channel.write(ByteBuffer.wrap("ls".getBytes()));
-                        Thread.sleep(200);
-                        //buffer.flip();
-                        //Thread.sleep(100);
-                        //inputBufferByte = null;
-                        buffer.clear();
-                        inputBufferByte = inputObject();
-                        //sizeFile = ByteBuffer.wrap(inputBufferByte).getInt() + 1024;
-                        //System.out.println(sizeFile);
-                        //inputBufferByte = inputObject();
-                        if (inputBufferByte != null) {
-                            System.out.println("1");
-                            List<FileInfo> list = (List<FileInfo>) convertFromBytes(inputBufferByte);
-                            panelController.setList(list);
-                        /*for (FileInfo f : list) {
-                            System.out.println("write");
-                            System.out.println(f.getFileName());
-                        }*/
-                        } else {
-                            System.out.println("List is empty");
-                            panelController.setList(null);
-                        }
-                        //inputBufferByte = null;
-                        //buffer.flip();
-                        channel.write(ByteBuffer.wrap("path".getBytes()));
-                        //buffer.flip();
-                        Thread.sleep(200);
-                        inputBufferByte = inputObject();
-                        panelController.setPathFieldServer((String) convertFromBytes(inputBufferByte));
-
-                        return;
-                    }
-
-                    iterator.remove();
-                }
-
+            channel.write(ByteBuffer.wrap("ls".getBytes()));
+            buffer.clear();
+            inputBufferByte = inputObject();
+            if (inputBufferByte != null) {
+                System.out.println("пришел List");
+                List<FileInfo> list = (List<FileInfo>) convertFromBytes(inputBufferByte);
+                System.out.println(list.toString());
+                System.out.println();
+                panelController.setList(list);
+            } else {
+                System.out.println("List is empty");
+                panelController.setList(null);
             }
-        } catch (IOException | InterruptedException e) {
+            channel.write(ByteBuffer.wrap("path".getBytes()));
+            buffer.clear();
+            inputBufferByte = inputObject();
+            System.out.println((String) convertFromBytes(inputBufferByte));
+            panelController.setPathFieldServer((String) convertFromBytes(inputBufferByte));
+
+
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void authSend (String s) throws IOException {
+    public void authSend(String s) throws IOException {
 
         try {
             inputBufferByte = null;
@@ -127,7 +98,7 @@ public class Client {
             //buffer.flip();
             Thread.sleep(200);
             inputBufferByte = inputObject();
-            if (inputBufferByte != null ) {
+            if (inputBufferByte != null) {
                 String authString = (String) convertFromBytes(inputBufferByte);
                 if (authString.equals("OK")) {
                     auth = true;
@@ -141,26 +112,57 @@ public class Client {
 
     }
 
-    private byte[] inputObject() throws IOException {
-        System.out.println("started input byte");
-
-        int read = channel.read(buffer);
-            //System.out.println("read channel " + read);
-            if (read == -1) {
-                return null;
+    private byte[] inputObject() {
+        try {
+            System.out.println("Ждем байты");
+            int read = 0;
+            int pos = 0;
+            byte count = 0;
+            byte[] buf = new byte[4];
+            // TODO: 22.11.2020 Добавить механизм прерывание цикла через 1 минут если нет ответа
+            while (read <= 3) {
+                Thread.sleep(100);
+                read = channel.read(buffer);
+                System.out.println("Ждем байты для определения размера посылки");
+                if (read > 3) {
+                    buffer.flip();
+                    for (int i = 0; i < 4; i++) {
+                        buf[i] = buffer.get();
+                        buffer.position(i + 1);
+                    }
+                    sizeFile = ByteBuffer.wrap(buf).getInt();
+                    buf = new byte[sizeFile];
+                    continue;
+                }
             }
-            if (read == 0) {
-                return null;
+            System.out.println(sizeFile);
+            System.out.println("принимаем посылку");
+            while (true) {
+                if (count == 0) {
+                    while (buffer.hasRemaining()) {
+                        buf[pos++] = buffer.get();
+                    }
+                    if (pos == sizeFile) {
+                        return buf;
+                    }
+                    count++;
+                    buffer.clear();
+                } else if (read > 0) {
+                    buffer.flip();
+                    while (buffer.hasRemaining()) {
+                        buf[pos++] = buffer.get();
+                    }
+                    if (pos == sizeFile) {
+                        return buf;
+                    }
+                    buffer.clear();
+                }
+                read = channel.read(buffer);
             }
-        buffer.flip();
-        byte[] buf = new byte[read];
-        int pos = 0;
-        while (buffer.hasRemaining()) {
-            buf[pos++] = buffer.get();
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
         }
-        buffer.clear();
-        sizeFile = BUFFER_SIZE;
-        return buf;
+        return null;
     }
 
     private static Object convertFromBytes(byte[] bytes) {
@@ -175,7 +177,7 @@ public class Client {
 
     public void closeChannel() {
         try {
-            //channel.write(ByteBuffer.wrap("exit".getBytes()));
+            channel.write(ByteBuffer.wrap("exit".getBytes()));
             selector.close();
             channel.close();
         } catch (IOException e) {
@@ -183,28 +185,40 @@ public class Client {
         }
     }
 
-    public void cdServer(String msg) {
-    }
-
     public byte[] downloadForServer(String s) {
         byte[] b = null;
         System.out.println(s);
-        try {
-            msgServer(s);
-            Thread.sleep(100);
-            b = inputObject();
-            sizeFile = ByteBuffer.wrap(b).getInt();
-            System.out.println("download " + sizeFile);
-            System.out.println(ByteBuffer.wrap(b).getInt());
-            b = inputObject();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        return b;
+        msgServer(s);
+        return b = inputObject();
     }
 
     public boolean isAuth() {
         return auth;
+    }
+
+    public boolean downloadInServer(String s, String fileName, String currentPath) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutput out = new ObjectOutputStream(bos)) {
+            buffer.clear();
+            buffer.put((byte) 11); // команда на начало передачи файла
+            buffer.put(ByteBuffer.allocate(4).putInt((int) Files.size(Paths.get(s).resolve(fileName))).array()); // размер файла
+            buffer.put((currentPath + "\\" + fileName).getBytes()); // путь к файлу с именем файла
+            channel.write(buffer);
+            buffer.clear();
+            byte[] sendByte = Files.readAllBytes(Paths.get(s).resolve(fileName));
+            System.out.println("размер файла" + sendByte.length);
+            int pos = 0, endFile = sendByte.length - 1;
+            while (pos == endFile) {
+                for (int i = 0; i < BUFFER_SIZE; i++) {
+                    buffer.put(i, sendByte[pos++]);
+                }
+                channel.write(buffer);
+                buffer.clear();
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

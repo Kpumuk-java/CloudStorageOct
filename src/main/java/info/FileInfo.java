@@ -1,4 +1,4 @@
-package client.app.javaFX;
+package info;
 
 import java.io.IOException;
 import java.io.Serializable;

@@ -8,7 +8,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
+import netty.handlers.FileDecoder;
 import netty.handlers.ServerNetty;
 
 public class NettyBaseServer {
@@ -20,12 +20,12 @@ public class NettyBaseServer {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(auth, worker)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<>() {
+                    .childHandler(new ChannelInitializer<Channel>() {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             channel.pipeline().addLast(
+                                    new FileDecoder(),
                                     new StringDecoder(),
-                                    new StringEncoder(),
                                     new ServerNetty()
                             );
                         }
@@ -35,8 +35,7 @@ public class NettyBaseServer {
             future.channel().closeFuture().sync(); // block
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        finally {
+        } finally {
             auth.shutdownGracefully();
             worker.shutdownGracefully();
         }

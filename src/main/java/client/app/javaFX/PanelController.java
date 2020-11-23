@@ -1,5 +1,6 @@
 package client.app.javaFX;
 
+import info.FileInfo;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -31,12 +32,12 @@ public class PanelController implements Initializable {
     @FXML
     TextField pathField;
 
-    private List<FileInfo> list = null;
+    private List<info.FileInfo> list = null;
     private Client openConnected;
     private boolean isServerPanel = false;
     private String pathFieldServer;
 
-    public void setList(List<FileInfo> list) {
+    public void setList(List<info.FileInfo> list) {
         this.list = list;
     }
 
@@ -44,7 +45,7 @@ public class PanelController implements Initializable {
         return openConnected;
     }
 
-    public List<FileInfo> getList() {
+    public List<info.FileInfo> getList() {
         return list;
     }
 
@@ -222,7 +223,7 @@ public class PanelController implements Initializable {
         }
     }
 
-    public void downloadOutServer(String path, String fileName, String currentPath) {
+    public boolean downloadOutServer(String path, String fileName, String currentPath) {
         byte[] btf = null;
         btf = openConnected.downloadForServer(path + fileName);
         System.out.println(currentPath + fileName);
@@ -237,12 +238,14 @@ public class PanelController implements Initializable {
         if (btf != null) {
             try {
                 Files.write(Paths.get(currentPath + "\\" + fileName), btf);
+                return true;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
             System.out.println("Files isEmpty");
         }
+        return  false;
     }
 
     public void deleteFromServer(String s) {
@@ -251,5 +254,12 @@ public class PanelController implements Initializable {
 
     public void authAction (String s) throws IOException {
         openConnected.authSend(s);
+    }
+
+    public boolean downloadInServer(String s, String fileName, String currentPath) {
+        if (openConnected.downloadInServer(s, fileName, currentPath)) {
+            return true;
+        }
+        return false;
     }
 }

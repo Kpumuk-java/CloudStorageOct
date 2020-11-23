@@ -1,11 +1,14 @@
 package netty.handlers;
 
-import client.app.javaFX.FileInfo;
+import info.FileInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +19,7 @@ import java.util.stream.Collectors;
 public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
     private String rootPath = "/";
-    private Path directPath = Path.of("server/");
+    private Path directPath = Paths.get("server/");
     private String[] pathCommand;
     private List<FileInfo> list;
     private boolean auth = false;
@@ -58,10 +61,12 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
             System.out.println(sendByte.length);
             ByteBuf btf = ctx.alloc().buffer().writeBytes(sendByte);
             System.out.println(getFilesList().toString());
-            //ctx.writeAndFlush(sizeMsg(ctx, sendByte.length));
-            //System.out.println("flush");
-            //Thread.sleep(50);
+            ctx.writeAndFlush(sizeMsg(ctx, sendByte.length));
             ctx.writeAndFlush(btf);
+        }
+
+        if (s.equals("exit")) {
+            ctx.close();
         }
 
         if (s.equals("up")) {
@@ -70,6 +75,7 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
         }
 
         if (s.equals("path")) {
+            ctx.writeAndFlush(sizeMsg(ctx, convertToBytes(directPath.toString()).length));
             ctx.writeAndFlush(ctx.alloc().buffer().writeBytes(convertToBytes(directPath.toString())));
         }
 
@@ -85,18 +91,14 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
                 }
             }
 
-            if (pathCommand[0].equals("download") && pathCommand.length == 2) {
-                System.out.println("if file exists");
+            if (pathCommand[0].equals("upload") && pathCommand.length == 2) {
                 if (Files.exists(Paths.get(pathCommand[1]))) {
                     System.out.println("file exists");
+                    ctx.writeAndFlush(sizeMsg(ctx, (int) Files.size(Paths.get(pathCommand[1]))));
                     byte[] sendByte = Files.readAllBytes(Paths.get(pathCommand[1]));
                     ByteBuf btf = ctx.alloc().buffer().writeBytes(sendByte);
-                    System.out.println(sendByte.length + " ");
-                    System.out.println("download started");
-                    //ctx.writeAndFlush(sizeMsg(ctx, sendByte.length));
-                    //Thread.sleep(500);
                     ctx.writeAndFlush(btf);
-                    System.out.println("download OK");
+                    System.out.println("upload OK");
                 }
             }
 
@@ -106,7 +108,6 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
                 } else if (pathCommand[3].equals("0")) {
                     Files.copy(Paths.get(pathCommand[1]), Paths.get(pathCommand[2]));
-
                 } else {
                     System.out.println("do not creat file");
                 }
@@ -114,7 +115,7 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
             if (pathCommand[0].equals("cd") && pathCommand.length > 1) {
                 System.out.println(pathCommand[1]);
-                if (Files.exists(Path.of(pathCommand[1]))) {
+                if (Files.exists(Paths.get(pathCommand[1]))) {
                     System.out.println(pathCommand[1]);
                     directPath = Paths.get(pathCommand[1]);
                 } else {
@@ -125,7 +126,7 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
             if (pathCommand[0].equals("touch") && s.split(" ").length == 2) {
                 String[] touch = pathCommand[1].split("/");
-                if (!Files.exists(Path.of(pathCommand[1]))) {
+                if (!Files.exists(Paths.get(pathCommand[1]))) {
                     createFile(touch);
                 } else {
                     ctx.writeAndFlush("Don't create file");
@@ -133,6 +134,7 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
             }
 
         }
+
     }
 
     private void checkAuth(ChannelHandlerContext ctx, String s) throws IOException {
@@ -159,10 +161,10 @@ public class ServerNetty extends SimpleChannelInboundHandler<String> {
 
     private void createFile(String[] touch) throws IOException {
         if (touch[touch.length - 1].split("\\.").length > 1) {
-            Path pathDirectory = Path.of(pathCommand[1].substring(0,
+            Path pathDirectory = Paths.get(pathCommand[1].substring(0,
                     pathCommand[1].length() - touch[touch.length - 1].length()));
             Files.createDirectory(pathDirectory);
-            Files.createFile(Path.of(pathCommand[1]));
+            Files.createFile(Paths.get(pathCommand[1]));
         }
     }
 

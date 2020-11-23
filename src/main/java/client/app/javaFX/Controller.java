@@ -1,5 +1,6 @@
 package client.app.javaFX;
 
+import info.FileInfo;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -78,9 +79,19 @@ public class Controller {
             return;
         } else if (srcPC.isServerPanel() & !dstPC.isServerPanel()) {
             System.out.println("download file Server -> Client");
-            srcPC.downloadOutServer("download " + srcPC.getPathFieldServer() + "\\", fileName, dstPC.getCurrentPath());
+            if (!srcPC.downloadOutServer("upload " + srcPC.getPathFieldServer() + "\\", fileName, dstPC.getCurrentPath())) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
+                alert.showAndWait();
+            }
+            dstPC.updateList(Paths.get(dstPC.getCurrentPath()));
             return;
+
         } else if (!srcPC.isServerPanel() & dstPC.isServerPanel()) {
+            System.out.println("download file Client -> Server");
+            if (!srcPC.downloadInServer("download " + srcPC.getCurrentPath() + "\\", fileName, dstPC.getPathFieldServer())) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
+                alert.showAndWait();
+            }
             dstPC.updateListClientInServer();
             return;
         }
@@ -134,8 +145,8 @@ public class Controller {
         PanelController PC = (PanelController) leftPanel.getProperties().get("ctrl");
         PC.authAction(login.getText() + " " + password.getText());
         if (PC.getOpenConnected().isAuth()) {
-               auth.setVisible(false);
-               primaryPanel.setVisible(true);
+            auth.setVisible(false);
+            primaryPanel.setVisible(true);
         }
     }
 }

@@ -15,8 +15,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -37,10 +37,17 @@
             <version>4.1.51.Final</version>
         </dependency>
         <dependency>
+            <groupId>no.uis.nio</groupId>
+            <artifactId>nio-fs-util</artifactId>
+            <version>1.1.7</version>
+
+
+        </dependency>
+        <!--<dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>11.0.2</version>
-        </dependency>
+        </dependency>-->
     </dependencies>
 
 
