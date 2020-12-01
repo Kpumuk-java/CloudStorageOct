@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="client.app.javaFX.AuthController" alignment="CENTER">
+    <Label fx:id="text"/>
+    <TextField fx:id="login"/>
+    <PasswordField fx:id="password"/>
+    <Button  text="Login" onAction="#btnConnected"/>
+</VBox>

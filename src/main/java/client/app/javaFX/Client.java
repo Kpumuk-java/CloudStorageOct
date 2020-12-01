@@ -53,19 +53,36 @@ public class Client {
         }
     }
 
-    public void msgServer(String s) {
+   /* public void msgServer(String s) {
         try {
             channel.write(ByteBuffer.wrap(s.getBytes()));
+
             Thread.sleep(100);
             buffer.clear();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+    }*/
+
+    public boolean cd(String path) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 7);
+            buffer.put(path.getBytes());
+            buffer.flip();
+            channel.write(buffer);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
+
 
     public void updateListServer(PanelController panelController) {
         try {
-            channel.write(ByteBuffer.wrap("ls".getBytes()));
+            buffer.clear();
+            channel.write(ByteBuffer.wrap(new byte[]{1}));
             buffer.clear();
             inputBufferByte = inputObject();
             if (inputBufferByte != null) {
@@ -78,7 +95,7 @@ public class Client {
                 System.out.println("List is empty");
                 panelController.setList(null);
             }
-            channel.write(ByteBuffer.wrap("path".getBytes()));
+            channel.write(ByteBuffer.wrap(new byte[]{3}));
             buffer.clear();
             inputBufferByte = inputObject();
             System.out.println((String) convertFromBytes(inputBufferByte));
@@ -90,26 +107,32 @@ public class Client {
         }
     }
 
-    public void authSend(String s) throws IOException {
+    public boolean authSend(String login, String password){
 
         try {
             inputBufferByte = null;
-            channel.write(ByteBuffer.wrap(s.getBytes()));
-            //buffer.flip();
-            Thread.sleep(200);
+            buffer.clear();
+            buffer.put(login.getBytes());
+            buffer.put((byte) '|');
+            buffer.put(password.getBytes());
+            buffer.flip();
+            channel.write(buffer);
+            buffer.clear();
             inputBufferByte = inputObject();
             if (inputBufferByte != null) {
                 String authString = (String) convertFromBytes(inputBufferByte);
                 if (authString.equals("OK")) {
                     auth = true;
+                    return true;
                 }
             } else {
                 System.out.println("return is empty");
+
             }
-        } catch (InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-
+        return false;
     }
 
     private byte[] inputObject() {
@@ -177,7 +200,8 @@ public class Client {
 
     public void closeChannel() {
         try {
-            channel.write(ByteBuffer.wrap("exit".getBytes()));
+            buffer.clear();
+            channel.write(ByteBuffer.wrap(new byte[]{99}));
             selector.close();
             channel.close();
         } catch (IOException e) {
@@ -187,8 +211,19 @@ public class Client {
 
     public byte[] downloadForServer(String s) {
         byte[] b = null;
-        System.out.println(s);
-        msgServer(s);
+
+        try {
+            System.out.println(s);
+            buffer.clear();
+            buffer.put((byte) 5);
+            buffer.put(s.getBytes());
+            buffer.flip();
+            channel.write(buffer);
+            buffer.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return b = inputObject();
     }
 
@@ -196,29 +231,82 @@ public class Client {
         return auth;
     }
 
+
+
     public boolean downloadInServer(String s, String fileName, String currentPath) {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutput out = new ObjectOutputStream(bos)) {
+        try {
             buffer.clear();
             buffer.put((byte) 11); // команда на начало передачи файла
             buffer.put(ByteBuffer.allocate(4).putInt((int) Files.size(Paths.get(s).resolve(fileName))).array()); // размер файла
             buffer.put((currentPath + "\\" + fileName).getBytes()); // путь к файлу с именем файла
+            buffer.flip();
             channel.write(buffer);
             buffer.clear();
             byte[] sendByte = Files.readAllBytes(Paths.get(s).resolve(fileName));
-            System.out.println("размер файла" + sendByte.length);
-            int pos = 0, endFile = sendByte.length - 1;
-            while (pos == endFile) {
-                for (int i = 0; i < BUFFER_SIZE; i++) {
-                    buffer.put(i, sendByte[pos++]);
+            System.out.println("размер файла " + sendByte.length);
+            int pos = 0, endFile = sendByte.length, circle;
+            while (pos < endFile) {
+                if (BUFFER_SIZE > endFile - pos) {
+                    circle = endFile - pos;
+                } else {
+                    circle = BUFFER_SIZE;
                 }
+                for (int i = 0; i < circle; i++) {
+                    buffer.put(sendByte[pos++]);
+                }
+                System.out.println(buffer);
+                System.out.println(pos);
+                buffer.flip();
                 channel.write(buffer);
                 buffer.clear();
+                Thread.sleep(10);
             }
+            return true;
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public void upServer(String up) {
+        try {
+            buffer.clear();
+            channel.write(ByteBuffer.wrap(new byte[]{2}));
+
+            Thread.sleep(200);
+            // TODO: 30.11.2020 Продумать механизм ожидания ответа о смене позиции на сервере
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    public boolean copyServerFromServer (String path, String currentPath) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 6);
+            buffer.put(path.getBytes());
+            buffer.put((byte) '|');
+            buffer.put(currentPath.getBytes());
+            buffer.flip();
+            channel.write(buffer);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
+        return false;
+    }
+
+    public boolean deleteServer(String s) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 4);
+            buffer.put(s.getBytes());
+            buffer.flip();
+            channel.write(buffer);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

@@ -7,8 +7,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.string.StringDecoder;
-import netty.handlers.FileDecoder;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.Delimiters;
 import netty.handlers.ServerNetty;
 
 public class NettyBaseServer {
@@ -24,8 +24,6 @@ public class NettyBaseServer {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             channel.pipeline().addLast(
-                                    new FileDecoder(),
-                                    new StringDecoder(),
                                     new ServerNetty()
                             );
                         }

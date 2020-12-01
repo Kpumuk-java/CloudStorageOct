@@ -36,7 +36,7 @@ public class Controller {
         Platform.exit();
     }
 
-    public void copyBtnAction(ActionEvent actionEvent) {
+    public void copyBtnAction(ActionEvent actionEvent) throws InterruptedException {
         PanelController leftPC = (PanelController) leftPanel.getProperties().get("ctrl");
         PanelController rightPC = (PanelController) rightPanel.getProperties().get("ctrl");
 
@@ -69,7 +69,7 @@ public class Controller {
                         return;
                     }
                 }
-                srcPC.copyServer("copyServer " + srcPC.getPathFieldServer() + "\\" + fileName + " " + dstPC.getPathFieldServer() + "\\" + fileName, dstPC);
+                srcPC.copyServer(srcPC.getPathFieldServer() + "\\" + fileName, dstPC.getPathFieldServer() + "\\" + fileName, dstPC);
                 System.out.println(srcPC.getPathFieldServer() + "\\" + fileName + " " + dstPC.getPathFieldServer());
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
@@ -79,7 +79,7 @@ public class Controller {
             return;
         } else if (srcPC.isServerPanel() & !dstPC.isServerPanel()) {
             System.out.println("download file Server -> Client");
-            if (!srcPC.downloadOutServer("upload " + srcPC.getPathFieldServer() + "\\", fileName, dstPC.getCurrentPath())) {
+            if (!srcPC.downloadOutServer(srcPC.getPathFieldServer() + "\\", fileName, dstPC.getCurrentPath())) {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
                 alert.showAndWait();
             }
@@ -88,10 +88,11 @@ public class Controller {
 
         } else if (!srcPC.isServerPanel() & dstPC.isServerPanel()) {
             System.out.println("download file Client -> Server");
-            if (!srcPC.downloadInServer("download " + srcPC.getCurrentPath() + "\\", fileName, dstPC.getPathFieldServer())) {
+            if (!srcPC.downloadInServer(srcPC.getCurrentPath() + "\\", fileName, dstPC.getPathFieldServer())) {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось скопировать", ButtonType.OK);
                 alert.showAndWait();
             }
+            Thread.sleep(1000);
             dstPC.updateListClientInServer();
             return;
         }
@@ -130,14 +131,24 @@ public class Controller {
         }
     }
 
-    private void deleteFileAndDirectory(PanelController leftPC) throws IOException {
-        Path path = Paths.get(leftPC.getCurrentPath()).resolve(leftPC.getSelectedFileName());
-        if (leftPC.isServerPanel()) {
-            System.out.println("delete " + leftPC.getPathFieldServer() + "\\" + leftPC.getSelectedFileName());
-            leftPC.deleteFromServer("delete " + leftPC.getPathFieldServer() + "\\" + leftPC.getSelectedFileName());
+    private void deleteFileAndDirectory(PanelController panelController) throws IOException {
+        Path path = Paths.get(panelController.getCurrentPath()).resolve(panelController.getSelectedFileName());
+        if (panelController.isServerPanel()) {
+            System.out.println("delete " + panelController.getPathFieldServer() + "\\" + panelController.getSelectedFileName());
+            if (!panelController.deleteFromServer(panelController.getPathFieldServer() + "\\" + panelController.getSelectedFileName())) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Не удалось удалить файл", ButtonType.OK);
+                alert.showAndWait();
+            } else {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                panelController.updateListClientInServer();
+            }
         } else {
             Files.delete(path);
-            leftPC.updateList(Paths.get(leftPC.getCurrentPath()));
+            panelController.updateList(Paths.get(panelController.getCurrentPath()));
         }
     }
 

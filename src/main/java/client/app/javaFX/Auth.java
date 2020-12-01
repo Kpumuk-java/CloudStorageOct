@@ -6,13 +6,13 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class Main extends Application {
+public class Auth extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/main.fxml"));
-        primaryStage.setTitle("Java Cloud Storage Oct");
-        primaryStage.setScene(new Scene(root, 1000, 600));
+        Parent root = FXMLLoader.load(getClass().getResource("/auth.fxml"));
+        primaryStage.setTitle("Login");
+        primaryStage.setScene(new Scene(root, 400, 300));
         primaryStage.show();
     }
 
@@ -20,4 +20,5 @@ public class Main extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+
 }

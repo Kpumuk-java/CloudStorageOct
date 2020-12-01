@@ -33,12 +33,16 @@ public class PanelController implements Initializable {
     TextField pathField;
 
     private List<info.FileInfo> list = null;
-    private Client openConnected;
+    private static Client openConnected;
     private boolean isServerPanel = false;
     private String pathFieldServer;
 
     public void setList(List<info.FileInfo> list) {
         this.list = list;
+    }
+
+    public static void setOpenConnected(Client client) {
+        openConnected = client;
     }
 
     public Client getOpenConnected() {
@@ -122,7 +126,7 @@ public class PanelController implements Initializable {
                         Path path = Paths.get(pathFieldServer).resolve(filesTable.getSelectionModel().getSelectedItem().getFileName());
                         if (Files.isDirectory(path)) {
                             System.out.println("this directory");
-                            cdServer("cd " + path.toString());
+                            cdServer(path.toString());
                         }
                     }
 
@@ -131,21 +135,25 @@ public class PanelController implements Initializable {
             }
 
 
-
-
         });
-
-        openConnected = new Client();
-        openConnected.connected();
-
 
         updateList(Paths.get("."));
     }
 
     private void cdServer(String msg) {
-        openConnected.msgServer(msg);
-        openConnected.updateListServer(this);
-        updateListClientInServer();
+        if (openConnected.cd(msg)) {
+            System.out.println("update");
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            openConnected.updateListServer(this);
+            updateListClientInServer();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Не удалось перейти", ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 
     public void updateList(Path path) {
@@ -181,7 +189,7 @@ public class PanelController implements Initializable {
                 updateList(upperPath);
             }
         } else {
-            openConnected.msgServer("up");
+            openConnected.upServer("up");
             openConnected.updateListServer(this);
             updateListClientInServer();
         }
@@ -190,6 +198,7 @@ public class PanelController implements Initializable {
     public void selectDiskAction(ActionEvent actionEvent) {
         ComboBox<String> element = (ComboBox<String>) actionEvent.getSource();
         updateList(Paths.get(element.getSelectionModel().getSelectedItem()));
+        isServerPanel = false;
     }
 
     public void btnSelectServer(ActionEvent actionEvent) {
@@ -213,11 +222,15 @@ public class PanelController implements Initializable {
         openConnected.closeChannel();
     }
 
-    public void copyServer(String s, PanelController dstPC) {
+    public void copyServer(String path,  String currentPath, PanelController dstPC) {
         try {
-            openConnected.msgServer(s + " 0");
-            Thread.sleep(100);
-            dstPC.updateListClientInServer();
+            if (openConnected.copyServerFromServer(path, currentPath)) {
+                Thread.sleep(100);
+                dstPC.updateListClientInServer();
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Файл не удалось скопировать", ButtonType.OK);
+                alert.showAndWait();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -226,10 +239,10 @@ public class PanelController implements Initializable {
     public boolean downloadOutServer(String path, String fileName, String currentPath) {
         byte[] btf = null;
         btf = openConnected.downloadForServer(path + fileName);
-        System.out.println(currentPath + fileName);
+        System.out.println("копирую " + currentPath + fileName);
         if (!Files.exists(Paths.get(currentPath + fileName))) {
             try {
-                Files.createFile(Paths.get(currentPath + "\\" +fileName));
+                Files.createFile(Paths.get(currentPath + "\\" + fileName));
             } catch (IOException e) {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Файл не удалось создать", ButtonType.OK);
                 alert.showAndWait();
@@ -245,15 +258,18 @@ public class PanelController implements Initializable {
         } else {
             System.out.println("Files isEmpty");
         }
-        return  false;
+        return false;
     }
 
-    public void deleteFromServer(String s) {
-        openConnected.msgServer(s);
+    public boolean deleteFromServer(String s) {
+        if (openConnected.deleteServer(s)) {
+            return true;
+        }
+        return false;
     }
 
-    public void authAction (String s) throws IOException {
-        openConnected.authSend(s);
+    public void authAction(String s) throws IOException {
+        //openConnected.authSend(s);
     }
 
     public boolean downloadInServer(String s, String fileName, String currentPath) {
